@@ -76,3 +76,4 @@ jobs:
           name: challenge-knowledge-apk
           path: "**/build/outputs/apk/debug/*.apk"
           if-no-files-found: error
+          # Trigger workflow registration
