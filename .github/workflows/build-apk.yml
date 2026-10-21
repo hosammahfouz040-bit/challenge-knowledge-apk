@@ -52,8 +52,17 @@ jobs:
           cd "$PROJECT_DIR"
           npm run build
 
-      
+      - name: Setup Android with Capacitor
+        run: |
+          cd "$PROJECT_DIR"
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          if [ ! -f capacitor.config.json ] && [ ! -f capacitor.config.ts ]; then
+            node -e "require('fs').writeFileSync('capacitor.config.json', JSON.stringify({appId:'com.challenge.knowledge',appName:'Challenge Knowledge',webDir:'dist'}, null, 2))"
           fi
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+          npx cap sync android
 
       - name: Build APK
         run: |
@@ -62,17 +71,7 @@ jobs:
           ./gradlew assembleDebug
 
       - name: Upload APK
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43- name: Setup Android with Capacitor
-        run: |
-          cd "$PROJECT_DIR"
-          npm install @capacitor/core @capacitor/cli @capacitor/android
-          if [ ! -f capacitor.config.json ] && [ ! -f capacitor.config.ts ]; then
-            node -e "require('fs').writeFileSync('capacitor.config.json', JSON.stringify({appId:'com.challenge.knowledge',appName:'تحدي المعرفة',webDir:'dist'}, null, 2))"
-          fi
-          if [ ! -d android ]; then
-            npx cap add android
-          fi
-          npx cap sync android607fa02
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: challenge-knowledge-apk
           path: "**/build/outputs/apk/debug/*.apk"
