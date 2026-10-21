@@ -1,0 +1,78 @@
+
+name: Build Challenge Knowledge APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Extract project ZIP
+        run: |
+          mkdir extracted
+          ZIP_FILE=$(find . -maxdepth 2 -type f -name "*.zip" | head -n 1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ERROR: Project ZIP not found"
+            exit 1
+          fi
+          unzip -q "$ZIP_FILE" -d extracted
+          PROJECT_DIR=$(find extracted -name package.json -not -path "*/node_modules/*" -printf '%h\n' | head -n 1)
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "ERROR: package.json not found"
+            exit 1
+          fi
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Project found: $PROJECT_DIR"
+
+      - name: Install dependencies
+        run: |
+          cd "$PROJECT_DIR"
+          npm install
+
+      - name: Build web application
+        run: |
+          cd "$PROJECT_DIR"
+          npm run build
+
+      - name: Check Android project
+        run: |
+          if [ ! -d "$PROJECT_DIR/android" ]; then
+            echo "Android project not found. Capacitor setup may be required."
+            exit 1
+          fi
+          if [ ! -f "$PROJECT_DIR/android/gradlew" ]; then
+            echo "Gradle wrapper not found."
+            exit 1
+          fi
+
+      - name: Build APK
+        run: |
+          cd "$PROJECT_DIR/android"
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: challenge-knowledge-apk
+          path: "**/build/outputs/apk/debug/*.apk"
+          if-no-files-found: error
